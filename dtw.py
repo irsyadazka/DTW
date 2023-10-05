@@ -36,22 +36,37 @@ def recognize_from_mic(template):
   sf.write('output.wav', myrecording, fs)
   return recognize_from_file('output.wav', template)
 
-def calculate_accuracy():
-  correct, total = 0
-
-  templates = {}
+def calculate_accuracy(words):
+  correct = 0
+  total = 0
   
+  templates = {}
+
   for word in words:
-    template_filename = os.path.join(MODEL_DIR, word, "template.wav")
+    template_filename = os.path.join(MODEL_DIR, word, "Azka Cewek.wav")
     templates[word] = getMFCC(template_filename)
 
   for word in words:
-    for i in range(1, 31):
-      testing_filename = os.path.join(MODEL_DIR, word, str(i) + ".wav")
-      recognized_word = recognize_from_file(testing_filename, templates)
+    print(f"\nComparison #{total + 1}")
+    
+    testing_filename = os.path.join(MODEL_DIR, word, "Azka Cowok.wav")
+    recognized_word = recognize_from_file(testing_filename, templates)
 
-      if recognized_word == word:
-        correct += 1
-      total += 1
+    print(f"Recognized word: {recognized_word}")
+    print(f"Word: {word}")
+
+    if recognized_word == word:
+      correct += 1
+    total += 1
 
   return (correct / total) * 100
+
+print(f"List of words:")
+
+i = 1
+for word in words:
+  print(f"{i}. {word}")
+  i += 1
+
+output = calculate_accuracy(words)
+print(f"\nAccuracy: {output}")
