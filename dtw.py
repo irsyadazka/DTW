@@ -16,16 +16,28 @@ def getMFCC(filename):
   features = mfcc(signal, rate, numcep=39, nfft=2000)
   return features
 
-def DTW(x, y):
-  distance, _ = fastdtw(x, y, dist=sqeuclidean)
-  return distance
+def DTW(x, y, dist_func=None):
+  if dist_func is None:
+    dist_func = lambda a, b: np.linalg.norm(a - b)
+
+  len_x, len_y = len(x), len(y)
+  dtw_matrix = np.zeros((len_x + 1, len_y + 1))
+  dtw_matrix[0, 1:] = np.inf
+  dtw_matrix[1:, 0] = np.inf
+
+  for i in range(1, len_x + 1):
+    for j in range(1, len_y + 1):
+      cost = dist_func(x[i-1], y[j-1])
+      dtw_matrix[i, j] = cost + min(dtw_matrix[i-1, j], dtw_matrix[i, j-1], dtw_matrix[i-1, j-1])
+
+  return dtw_matrix[len_x, len_y]
 
 def recognize_from_file(filename, template):
   sample_features = getMFCC(filename)
   dist = {}
 
   for word, template_word in template.items():
-    dist[word] = DTW(sample_features, template_word)
+    dist[word] = DTW(sample_features, template_word, sqeuclidean)
 
   return min(dist, key=dist.get)
 
@@ -36,7 +48,7 @@ def recognize_from_mic(template, i):
   myrecording = sd.rec(int(duration * fs), samplerate=fs, channels=1)
   sd.wait()
   if not os.path.exists('mics'):
-        os.mkdir('mics')
+    os.mkdir('mics')
 
   output_path = os.path.join('mics', f'output-{i}.wav')
   sf.write(output_path, myrecording, fs)
@@ -63,17 +75,19 @@ def calculate_accuracy(words, method = "file"):
     return
   else:
     for word in words:
-      print(f"\nComparison #{total + 1}")
-      
-      testing_filename = os.path.join(MODEL_DIR, word, "Azka Cowok.wav")
-      recognized_word = recognize_from_file(testing_filename, templates)
+      for test_file in ["Azka Cowok.wav", "Eja.wav"]:
+        print(f"\nComparison #{total + 1}")
 
-      print(f"Recognized word: {recognized_word}")
-      print(f"Word: {word}")
+        testing_filename = os.path.join(MODEL_DIR, word, test_file)
+        recognized_word = recognize_from_file(testing_filename, templates)
 
-      if recognized_word == word:
-        correct += 1
-      total += 1
+        print(f"Testing file: {testing_filename}")
+        print(f"Recognized word: {recognized_word}")
+        print(f"Word: {word}")
+
+        if recognized_word == word:
+            correct += 1
+        total += 1
 
   return (correct / total) * 100
 
@@ -81,7 +95,6 @@ method = input("Method (file/mic): ")
 if method == "mic":
   calculate_accuracy(words, method)
   exit()
-
 
 print(f"List of words:")
 
