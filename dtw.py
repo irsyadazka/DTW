@@ -86,7 +86,7 @@ def calculate_accuracy(words, method = "file"):
     return
   else:
     for word in words:
-      for test_file in ["Azka Cowok.wav", "Eja.wav"]:
+      for test_file in ["Azka Cowok.wav", "Eja.wav", "Azka Cwekcwok.wav"]:
         print(f"\nComparison #{total + 1}")
 
         testing_filename = os.path.join(MODEL_DIR, word, test_file)
