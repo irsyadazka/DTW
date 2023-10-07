@@ -4,17 +4,28 @@ import soundfile as sf
 import os
 import wave
 from scipy.io import wavfile
-from python_speech_features import mfcc
-from fastdtw import fastdtw
-from scipy.spatial.distance import euclidean, sqeuclidean, cosine, correlation, chebyshev, cityblock, minkowski
+from python_speech_features import mfcc, logfbank
 
 MODEL_DIR = "model/"
 words = [name for name in os.listdir(MODEL_DIR) if os.path.isdir(os.path.join(MODEL_DIR, name))]
 
 def getMFCC(filename):
   rate, signal = wavfile.read(filename)
-  features = mfcc(signal, rate, numcep=39, nfft=2000)
+
+  if len(signal.shape) == 2:
+    signal = np.mean(signal, axis=1)
+
+  features = logfbank(signal, rate, nfilt=39, nfft=2000)
   return features
+
+def sqeuclidean(a, b):
+  return np.sum((a - b) ** 2)
+
+def manhattan(a, b):
+  return np.sum(np.abs(a - b))
+
+def minkowski(a, b, p = 2):
+  return np.sum(np.abs(a - b) ** p) ** (1 / p)
 
 def DTW(x, y, dist_func=None):
   if dist_func is None:
@@ -37,7 +48,7 @@ def recognize_from_file(filename, template):
   dist = {}
 
   for word, template_word in template.items():
-    dist[word] = DTW(sample_features, template_word, sqeuclidean)
+    dist[word] = DTW(sample_features, template_word, dist_func=lambda a, b: sqeuclidean(a, b))
 
   return min(dist, key=dist.get)
 
